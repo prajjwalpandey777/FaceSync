@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: facesync-backend
+    env: docker
+    plan: standard   # dlib compile + face recognition needs more than the free 512MB instance
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        sync: false          # paste your Supabase connection string (see README)
+      - key: GOOGLE_CLIENT_ID
+        sync: false          # from Google Cloud Console OAuth client
+      - key: JWT_SECRET
+        generateValue: true  # Render auto-generates a random secret
+      - key: JWT_EXPIRE_MINUTES
+        value: "720"
+      - key: FRONTEND_ORIGIN
+        sync: false          # e.g. https://your-frontend.onrender.com or https://yourdomain.com
+      - key: FACE_MATCH_TOLERANCE
+        value: "0.5"
