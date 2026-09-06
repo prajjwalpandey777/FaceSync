@@ -1,0 +1,8 @@
+staticSites:
+  - name: facesync-frontend
+    buildCommand: ""
+    publishPath: .
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: no-cache
