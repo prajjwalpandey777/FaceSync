@@ -4,6 +4,7 @@ sqlalchemy==2.0.35
 psycopg2-binary==2.9.9
 python-jose[cryptography]==3.3.0
 google-auth==2.34.0
+requests==2.32.3
 python-multipart==0.0.9
 pydantic==2.9.2
 pydantic-settings==2.5.2
