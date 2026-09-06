@@ -5,7 +5,7 @@
  * that file — see INTEGRATION_GUIDE.md for exactly what to swap.
  */
 
-const API_BASE = "https://YOUR-BACKEND.onrender.com"; // <-- set this to your deployed Render URL
+const API_BASE = "https://facesync-rv38.onrender.com"; // <-- set this to your deployed Render URL
 
 const Api = {
   token: localStorage.getItem("facesync_token") || null,
