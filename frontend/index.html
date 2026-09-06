@@ -373,10 +373,24 @@ h1, h2, h3, h4 { font-family: var(--font-display); letter-spacing: -0.01em; }
       <div class="form-row"><label>Full name</label><input class="input-field" id="as-name" placeholder="e.g. Rahul Sharma" required></div>
       <div class="form-row"><label>Registration number</label><input class="input-field" id="as-reg" placeholder="e.g. 21CS145" required></div>
       <div class="form-row">
-        <label>Face photo (one clear, front-facing photo)</label>
-        <input class="input-field" type="file" id="as-photo" accept="image/*" capture="user" required>
-        <div style="font-size:12px; color:var(--text-faint); margin-top:6px;">This is what the camera will match against during attendance — use a well-lit photo showing only this student's face.</div>
-      </div>
+  <label>Face photo (one clear, front-facing photo)</label>
+  <div style="display:flex; gap:8px; margin-bottom:8px;">
+    <input class="input-field" type="file" id="as-photo" accept="image/*" style="flex:1;">
+    <button type="button" class="btn btn-ghost btn-sm" id="as-camera-btn" onclick="openEnrollCamera()">Take photo</button>
+  </div>
+  <div id="as-camera-panel" style="display:none; margin-bottom:8px;">
+    <video id="as-camera-video" autoplay playsinline muted style="width:100%; max-width:320px; border-radius:12px; background:#000;"></video>
+    <div style="display:flex; gap:8px; margin-top:8px;">
+      <button type="button" class="btn btn-primary btn-sm" onclick="captureEnrollPhoto()">Capture</button>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="closeEnrollCamera()">Cancel</button>
+    </div>
+  </div>
+  <div id="as-photo-preview" style="display:none; align-items:center; gap:10px; margin-bottom:8px;">
+    <img id="as-photo-preview-img" style="width:72px; height:72px; object-fit:cover; border-radius:10px;">
+    <button type="button" class="btn btn-ghost btn-sm" onclick="retakeEnrollPhoto()">Retake</button>
+  </div>
+  <div style="font-size:12px; color:var(--text-faint); margin-top:6px;">This is what the camera will match against during attendance — upload a file or use "Take photo" to capture one on the spot.</div>
+</div>
       <div class="form-row" id="as-error" style="display:none; color:var(--accent-danger); font-size:13px;"></div>
       <div class="form-actions"><button type="submit" class="btn btn-primary" id="as-submit-btn" style="width:100%;">Add to class</button></div>
     </form>
@@ -651,18 +665,25 @@ async function submitAddStudent(e) {
 
   const name = document.getElementById('as-name').value.trim();
   const reg = document.getElementById('as-reg').value.trim();
-  const photoFile = document.getElementById('as-photo').files[0];
-  if (!name || !reg || !photoFile) return;
+  const fileInput = document.getElementById('as-photo').files[0];
+  const photoBlob = enrollPhotoBlob || fileInput;
+  if (!name || !reg || !photoBlob) {
+    errEl.textContent = 'Add a name, registration number, and a face photo (upload or take one).';
+    errEl.style.display = 'block';
+    return;
+  }
 
   btn.disabled = true;
   btn.textContent = 'Enrolling…';
   try {
-    await Api.enrollStudent(state.currentClassId, { name, regNo: reg, photoBlob: photoFile });
+    await Api.enrollStudent(state.currentClassId, { name, regNo: reg, photoBlob });
     document.getElementById('as-name').value = '';
     document.getElementById('as-reg').value = '';
     document.getElementById('as-photo').value = '';
+    enrollPhotoBlob = null;
+    document.getElementById('as-photo-preview').style.display = 'none';
     await renderClassDetail();
-    await loadClassesFromServer(); // keep dashboard/select counts fresh
+    await loadClassesFromServer();
   } catch (err) {
     errEl.textContent = err.message;
     errEl.style.display = 'block';
@@ -670,6 +691,45 @@ async function submitAddStudent(e) {
     btn.disabled = false;
     btn.textContent = 'Add to class';
   }
+}
+
+/* ---- Live camera capture for enrollment photos ---- */
+let enrollPhotoBlob = null;
+
+async function openEnrollCamera() {
+  document.getElementById('as-camera-panel').style.display = 'block';
+  document.getElementById('as-photo-preview').style.display = 'none';
+  document.getElementById('as-photo').value = '';
+  enrollPhotoBlob = null;
+  try {
+    await Camera.start('as-camera-video', { facingMode: 'user' });
+  } catch (err) {
+    alert('Could not access the camera: ' + err.message);
+    closeEnrollCamera();
+  }
+}
+
+function closeEnrollCamera() {
+  Camera.stop();
+  document.getElementById('as-camera-panel').style.display = 'none';
+}
+
+async function captureEnrollPhoto() {
+  try {
+    const blob = await Camera.captureFrameBlob();
+    enrollPhotoBlob = blob;
+    document.getElementById('as-photo-preview-img').src = URL.createObjectURL(blob);
+    document.getElementById('as-photo-preview').style.display = 'flex';
+    closeEnrollCamera();
+  } catch (err) {
+    alert('Could not capture photo: ' + err.message);
+  }
+}
+
+function retakeEnrollPhoto() {
+  enrollPhotoBlob = null;
+  document.getElementById('as-photo-preview').style.display = 'none';
+  openEnrollCamera();
 }
 
 async function removeStudent(studentId) {
@@ -894,6 +954,11 @@ function renderReportFromServer(report) {
 }
 
 /* ============ INIT ============ */
+document.getElementById('as-photo').addEventListener('change', () => {
+  enrollPhotoBlob = null;
+  document.getElementById('as-photo-preview').style.display = 'none';
+});
+
 tryRestoreSession();
 
 </script>
