@@ -318,7 +318,7 @@ h1, h2, h3, h4 { font-family: var(--font-display); letter-spacing: -0.01em; }
 <div class="view" id="view-dashboard">
 <div class="container">
   <div class="page-head fade-in-up">
-    <div class="page-title">Good afternoon, Prof. Mehta</div>
+    <div class="page-title" id="dash-greeting">Welcome</div>
     <div class="page-sub" id="dash-sub">Computer Science &amp; Engineering</div>
   </div>
   <div class="stats-row" id="dash-stats"></div>
@@ -481,6 +481,19 @@ let state = { loggedIn: false, teacher: null, classes: [], currentClassId: null,
 function initials(name) { return name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase(); }
 function getClass(id) { return state.classes.find(c => c.id === id); }
 
+function professorTitle(name) {
+  if (!name) return 'Professor';
+  if (/^(prof|professor|dr)\.?\s/i.test(name.trim())) return name.trim();
+  return `Professor ${name.trim()}`;
+}
+
+function timeOfDayGreeting() {
+  const h = new Date().getHours();
+  if (h < 12) return 'Good morning';
+  if (h < 17) return 'Good afternoon';
+  return 'Good evening';
+}
+
 /* ============ AUTH ============ */
 async function handleGoogleCredential(response) {
   const errEl = document.getElementById('login-error');
@@ -550,11 +563,12 @@ async function loadClassesFromServer() {
 function renderDashboard() {
   const totalClasses = state.classes.length;
   const totalStudents = state.classes.reduce((a,c)=>a+(c.student_count||0), 0);
+  document.getElementById('dash-greeting').textContent = `${timeOfDayGreeting()}, ${professorTitle(state.teacher ? state.teacher.name : '')}`;
   document.getElementById('dash-sub').textContent = state.teacher ? state.teacher.email : '';
   document.getElementById('dash-stats').innerHTML = `
     <div class="stat-card fade-in-up"><div class="stat-label">Active classes</div><div class="stat-value">${totalClasses}</div></div>
     <div class="stat-card fade-in-up" style="animation-delay:.05s"><div class="stat-label">Students enrolled</div><div class="stat-value">${totalStudents}</div></div>
-    <div class="stat-card fade-in-up" style="animation-delay:.1s"><div class="stat-label">Signed in as</div><div class="stat-value" style="font-size:16px;">${state.teacher ? state.teacher.name : '—'}</div></div>
+    <div class="stat-card fade-in-up" style="animation-delay:.1s"><div class="stat-label">Signed in as</div><div class="stat-value" style="font-size:16px;">${state.teacher ? professorTitle(state.teacher.name) : '—'}</div></div>
     <div class="stat-card fade-in-up" style="animation-delay:.15s"><div class="stat-label">Total classes</div><div class="stat-value">${totalClasses}</div></div>
   `;
 
