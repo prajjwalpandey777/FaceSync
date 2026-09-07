@@ -16,10 +16,11 @@ import numpy as np
 from PIL import Image, ImageOps
 from fastapi import HTTPException, status
 
-MAX_IMAGE_DIMENSION = 1024  # downscale large phone-camera photos for speed
+MAX_IMAGE_DIMENSION = 1024  # enrollment photos: keep quality high, this only runs once per student
+SCAN_IMAGE_DIMENSION = 480  # live scan frames: smaller = much faster face detection, run every couple seconds
 
 
-def _load_image_from_bytes(image_bytes: bytes) -> np.ndarray:
+def _load_image_from_bytes(image_bytes: bytes, max_dimension: int = MAX_IMAGE_DIMENSION) -> np.ndarray:
     try:
         img = Image.open(BytesIO(image_bytes))
         img = ImageOps.exif_transpose(img)  # respect phone camera orientation
@@ -27,8 +28,8 @@ def _load_image_from_bytes(image_bytes: bytes) -> np.ndarray:
     except Exception:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Could not read image")
 
-    if max(img.size) > MAX_IMAGE_DIMENSION:
-        img.thumbnail((MAX_IMAGE_DIMENSION, MAX_IMAGE_DIMENSION))
+        if max(img.size) > max_dimension:
+        img.thumbnail((max_dimension, max_dimension))
 
     return np.array(img)
 
@@ -47,9 +48,9 @@ def encode_single_face(image_bytes: bytes) -> List[float]:
     return encodings[0].tolist()
 
 
-def encode_all_faces(image_bytes: bytes) -> List[List[float]]:
+def encode_all_faces(image_bytes: bytes, max_dimension: int = SCAN_IMAGE_DIMENSION) -> List[List[float]]:
     """Used during a live attendance scan frame. Returns embeddings for every face found."""
-    image = _load_image_from_bytes(image_bytes)
+    image = _load_image_from_bytes(image_bytes, max_dimension=max_dimension)
     locations = face_recognition.face_locations(image, model="hog")
     if not locations:
         return []
