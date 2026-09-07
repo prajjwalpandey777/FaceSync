@@ -1,6 +1,10 @@
+import io
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import StreamingResponse
+from openpyxl import Workbook
+from openpyxl.styles import Font
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -82,4 +86,59 @@ def class_report(
         sessions_run=len(sessions),
         latest_session=latest_report,
         overall=overall,
+    )
+
+@router.get("/{session_id}/export")
+def export_session_excel(
+    class_id: int,
+    session_id: int,
+    db: Session = Depends(get_db),
+    teacher: models.Teacher = Depends(get_current_teacher),
+):
+    """Downloads one session's attendance as a real .xlsx file — class name, date,
+    and every student's present/absent status with match confidence."""
+    school_class = get_owned_class(class_id, db, teacher)
+    session = (
+        db.query(models.AttendanceSession)
+        .filter(models.AttendanceSession.id == session_id, models.AttendanceSession.class_id == class_id)
+        .first()
+    )
+    if not session:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found for this class")
+
+    report = _build_session_report(db, session, school_class.students)
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Attendance"
+
+    ws.append([f"{school_class.name} ({school_class.code}) — Section {school_class.section}"])
+    ws.append([f"Session date: {session.started_at.strftime('%d %b %Y, %I:%M %p')}"])
+    ws.append([f"Present: {report.present_count} / {report.total} ({report.attendance_rate}%)"])
+    ws.append([])
+    ws["A1"].font = Font(bold=True, size=13)
+
+    header_row = ["Name", "Registration No.", "Status", "Match confidence (%)"]
+    ws.append(header_row)
+    header_idx = ws.max_row
+    for cell in ws[header_idx]:
+        cell.font = Font(bold=True)
+
+    all_rows = sorted(report.present + report.absent, key=lambda r: r.name.lower())
+    for row in all_rows:
+        ws.append([row.name, row.reg_no, row.status.capitalize(), row.confidence if row.confidence is not None else ""])
+
+    widths = {"A": 28, "B": 20, "C": 12, "D": 20}
+    for col, width in widths.items():
+        ws.column_dimensions[col].width = width
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+
+    filename = f"{school_class.code}_attendance_{session.started_at.strftime('%Y-%m-%d')}.xlsx"
+    return StreamingResponse(
+        buf,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
