@@ -28,7 +28,7 @@ def _load_image_from_bytes(image_bytes: bytes, max_dimension: int = MAX_IMAGE_DI
     except Exception:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Could not read image")
 
-        if max(img.size) > max_dimension:
+    if max(img.size) > max_dimension:
         img.thumbnail((max_dimension, max_dimension))
 
     return np.array(img)
