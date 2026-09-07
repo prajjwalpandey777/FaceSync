@@ -77,8 +77,16 @@ const Api = {
   endSession(sessionId) { return this._request(`/sessions/${sessionId}/end`, { method: "POST" }); },
 
   // ---------- Reports ----------
+   // ---------- Reports ----------
   classReport(classId, sessionId) {
     const q = sessionId ? `?session_id=${sessionId}` : "";
     return this._request(`/classes/${classId}/reports${q}`);
+  },
+  async exportSessionExcel(classId, sessionId) {
+    const headers = {};
+    if (this.token) headers["Authorization"] = `Bearer ${this.token}`;
+    const res = await fetch(`${API_BASE}/classes/${classId}/reports/${sessionId}/export`, { headers });
+    if (!res.ok) throw new Error("Could not export attendance");
+    return res.blob();
   },
 };
