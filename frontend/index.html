@@ -762,7 +762,8 @@ function goToAttendanceSelect() {
 }
 
 /* ============ ATTENDANCE LIVE ============ */
-let scanInterval = null;
+let scanActive = false;   // is a scan loop currently allowed to run
+let scanPaused = false;   // user-toggled pause, independent of scanActive
 let currentFacing = 'environment';
 
 async function startAttendance(classId) {
@@ -810,14 +811,32 @@ async function startAttendance(classId) {
     document.getElementById('timer').textContent = `${m}:${sec}`;
   }, 1000);
 
-  scanInterval = setInterval(scanOnce, 1800);
+    scanActive = true;
+  scanPaused = false;
+  runScanLoop();
+}
+
+/**
+ * Waits for each request to finish before starting the next (plus a short
+ * gap) instead of a fixed timer — a fixed interval would fire again before
+ * a slow response even came back, piling up requests. This paces itself to
+ * however fast the server actually is.
+ */
+async function runScanLoop() {
+  if (!scanActive) return;
+  if (!scanPaused) {
+    await scanOnce();
+  }
+  if (scanActive) {
+    setTimeout(runScanLoop, 350);
+  }
 }
 
 async function scanOnce() {
   const s = state.session;
   if (!s) return;
   try {
-    const blob = await Camera.captureFrameBlob();
+    const blob = await Camera.captureFrameBlob(0.7, 480); // smaller frame = faster upload + faster detection
     const result = await Api.scanFrame(s.id, blob);
     document.getElementById('frame-counter').textContent = 'FACES ' + result.faces_detected;
     result.matches.forEach(m => addRosterEntry({ name: m.name, reg_no: m.reg_no }, m.confidence));
@@ -856,18 +875,11 @@ function updateLiveStatsDisplay(present, total) {
 }
 
 function togglePause() {
-  const paused = scanInterval === null;
-  if (paused) {
-    scanInterval = setInterval(scanOnce, 1800);
-  } else {
-    clearInterval(scanInterval);
-    scanInterval = null;
-  }
-  const nowPaused = scanInterval === null;
-  document.getElementById('pause-btn').textContent = nowPaused ? 'Resume scan' : 'Pause scan';
-  document.getElementById('pause-overlay').classList.toggle('show', nowPaused);
-  document.getElementById('rec-label').textContent = nowPaused ? 'PAUSED' : 'LIVE';
-  document.getElementById('rec-dot').classList.toggle('pulse-dot', !nowPaused);
+  scanPaused = !scanPaused;
+  document.getElementById('pause-btn').textContent = scanPaused ? 'Resume scan' : 'Pause scan';
+  document.getElementById('pause-overlay').classList.toggle('show', scanPaused);
+  document.getElementById('rec-label').textContent = scanPaused ? 'PAUSED' : 'LIVE';
+  document.getElementById('rec-dot').classList.toggle('pulse-dot', !scanPaused);
 }
 
 async function flipCamera() {
@@ -882,8 +894,8 @@ async function endAttendance() {
   if (!confirm('End attendance session? Students not yet scanned will be marked absent.')) return;
   const s = state.session; if (!s) return;
 
-  if (scanInterval) clearInterval(scanInterval);
-  scanInterval = null;
+  scanActive = false;
+  scanPaused = false;
   if (s.clockTimer) clearInterval(s.clockTimer);
   Camera.stop();
 
