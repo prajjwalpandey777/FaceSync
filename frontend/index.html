@@ -959,8 +959,11 @@ document.getElementById('as-photo').addEventListener('change', () => {
   document.getElementById('as-photo-preview').style.display = 'none';
 });
 
-tryRestoreSession();
+// Fire-and-forget: wake up the backend as soon as the page loads, so it's
+// warming up while the person reads the page instead of after they click sign-in.
+fetch(`${API_BASE}/health`).catch(() => {});
 
+tryRestoreSession();
 </script>
 
 </body>
