@@ -330,10 +330,15 @@ h1, h2, h3, h4 { font-family: var(--font-display); letter-spacing: -0.01em; }
 <!-- ============ CREATE CLASS ============ -->
 <div class="view" id="view-create-class">
 <div class="container">
-  <div class="page-head fade-in-up">
+    <div class="page-head fade-in-up">
     <a class="back-link" onclick="goHome()">&larr; Back to dashboard</a>
-    <div class="page-title">Create a new class</div>
-    <div class="page-sub">You'll add students to it right after.</div>
+    <div style="display:flex; justify-content:space-between; align-items:flex-end; gap:12px; flex-wrap:wrap;">
+      <div>
+        <div class="page-title" id="rp-title">Attendance report</div>
+        <div class="page-sub" id="rp-sub">—</div>
+      </div>
+      <button class="btn btn-ghost btn-sm" id="rp-export-btn" onclick="downloadExcelReport()" style="display:none;">Export to Excel</button>
+    </div>
   </div>
   <form class="panel form-card fade-in-up" onsubmit="submitCreateClass(event)">
     <div class="form-row"><label>Class name</label><input class="input-field" id="cc-name" placeholder="e.g. Distributed Systems" required></div>
@@ -928,6 +933,15 @@ function renderReportFromServer(report) {
   const session = report.latest_session;
   document.getElementById('rp-sub').textContent = session ? `Session on ${new Date(session.date).toLocaleString()}` : 'No session recorded yet';
 
+  const exportBtn = document.getElementById('rp-export-btn');
+  if (session) {
+    exportBtn.style.display = 'inline-flex';
+    state.reportContext = { classId: report.class_id, sessionId: session.session_id };
+  } else {
+    exportBtn.style.display = 'none';
+    state.reportContext = null;
+  }
+
   const present = session ? session.present : [];
   const absent = session ? session.absent : [];
   const total = session ? session.total : 0;
@@ -962,6 +976,31 @@ function renderReportFromServer(report) {
             <span class="mono" style="font-size:12.5px; width:80px; text-align:right;">${row.sessions_attended}/${row.sessions_total} · ${row.percentage}%</span>
           </div>
         </div>`).join('');
+  }
+}
+
+async function downloadExcelReport() {
+  const ctx = state.reportContext;
+  if (!ctx) return;
+  const btn = document.getElementById('rp-export-btn');
+  const originalText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Preparing…';
+  try {
+    const blob = await Api.exportSessionExcel(ctx.classId, ctx.sessionId);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `attendance_${ctx.sessionId}.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  } catch (err) {
+    alert('Could not export attendance: ' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalText;
   }
 }
 
