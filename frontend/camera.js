@@ -45,18 +45,26 @@ const Camera = {
     if (this.videoEl) this.videoEl.srcObject = null;
   },
 
-  /** Grabs the current video frame as a JPEG Blob, ready to send to the backend. */
-  captureFrameBlob(quality = 0.85) {
+   /** Grabs the current video frame as a JPEG Blob, ready to send to the backend.
+   *  Pass maxWidth to downscale first — smaller frames upload faster and the
+   *  backend's face detector runs faster on them too. */
+  captureFrameBlob(quality = 0.85, maxWidth = null) {
     if (!this.videoEl || !this.videoEl.videoWidth) {
       return Promise.reject(new Error("Camera not ready yet"));
     }
-    this.canvasEl.width = this.videoEl.videoWidth;
-    this.canvasEl.height = this.videoEl.videoHeight;
+    let width = this.videoEl.videoWidth;
+    let height = this.videoEl.videoHeight;
+    if (maxWidth && width > maxWidth) {
+      height = Math.round(height * (maxWidth / width));
+      width = maxWidth;
+    }
+    this.canvasEl.width = width;
+    this.canvasEl.height = height;
     const ctx = this.canvasEl.getContext("2d");
-    ctx.drawImage(this.videoEl, 0, 0, this.canvasEl.width, this.canvasEl.height);
+    ctx.drawImage(this.videoEl, 0, 0, width, height);
     return new Promise((resolve) => this.canvasEl.toBlob(resolve, "image/jpeg", quality));
   },
-
+  
   /** Lets the teacher switch between front/rear camera mid-session (mobile). */
   async switchFacing(videoElementId, currentFacing) {
     this.stop();
