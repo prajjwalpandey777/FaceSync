@@ -1,0 +1,10 @@
+# Extras for your own computer only (NOT used on Render):
+#   - converting your trained model to ONNX        (scripts/export_arcface_onnx.py)
+#   - the desktop webcam app                        (webcam_attendance.py)
+#   - the optional server-side recognition mode     (INFERENCE_MODE=local)
+-r requirements.txt
+opencv-python>=4.8.0
+torch>=2.0.0
+onnx>=1.15.0
+onnxruntime>=1.18.0
+openvino>=2024.0.0

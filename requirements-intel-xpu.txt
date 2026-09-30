@@ -1,0 +1,4 @@
+# Intel Arc GPU (XPU) Acceleration (Optional - for Intel Arc GPUs)
+--extra-index-url https://download.pytorch.org/whl/xpu
+torch==2.14.0+xpu
+openvino>=2024.0.0

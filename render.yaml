@@ -1,0 +1,35 @@
+# Render Blueprint - New > Blueprint > pick this repo.
+# The API no longer runs any AI models (they run in the visitor's browser), so the free plan is enough.
+services:
+  - type: web
+    name: facesync-api
+    runtime: python
+    plan: free               # free sleeps after ~15 min idle (first request then takes ~30-60 s). Use "starter" to stay awake.
+    region: singapore        # pick the region closest to your users AND your Supabase project
+    branch: main
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips="*"
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: ENVIRONMENT
+        value: production
+      - key: SERVE_FRONTEND
+        value: "false"
+      - key: INFERENCE_MODE
+        value: device                # recognition happens in the user's browser
+      - key: DEMO_MODE
+        value: "false"
+      - key: JWT_SECRET
+        generateValue: true          # Render creates a strong random value for you
+      # ---- fill these in the Render dashboard (never commit them) ----
+      - key: DATABASE_URL            # Supabase *Session pooler* connection string
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: FRONTEND_ORIGINS        # e.g. https://facesync.vercel.app  (your Vercel URL, no trailing slash)
+        sync: false
+      - key: ALLOWED_EMAIL_DOMAINS   # optional, e.g. college.edu
+        sync: false
