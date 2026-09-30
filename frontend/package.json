@@ -1,0 +1,9 @@
+{
+  "name": "facesync-frontend",
+  "version": "4.0.0",
+  "private": true,
+  "description": "FaceSync static frontend (Vercel). Face recognition runs in the visitor's browser.",
+  "scripts": {
+    "build": "node build-config.js"
+  }
+}
