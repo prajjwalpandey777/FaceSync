@@ -1646,17 +1646,20 @@ let scanPaused = false;   // user-toggled pause, independent of scanActive
 let currentFacing = 'user';
 
 async function startAttendance(classId) {
-  const c = await Api.getClass(classId);
-  if (!c.student_count) { alert('Add students to this class before taking attendance.'); return; }
-
   state.currentClassId = classId;
 
+  // Load the class info and the AI models at the same time instead of one after the other
+  let c;
   try {
-    await DeviceAI.prepare({ interactive: true });     // downloads/starts the models on this device (first time only)
+    [c] = await Promise.all([
+      Api.getClass(classId),
+      DeviceAI.prepare({ interactive: true }),   // downloads/starts the models on this device (first time only)
+    ]);
   } catch (err) {
     alert(err.message);
     return;
   }
+  if (!c.student_count) { alert('Add students to this class before taking attendance.'); return; }
 
   let session;
   try {
