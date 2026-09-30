@@ -2,10 +2,15 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0A0E1A">
+<meta name="color-scheme" content="dark">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
 <title>FaceSync — Attendance, verified on sight</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
 
 :root {
   --bg-base: #0A0E1A;
@@ -785,6 +790,110 @@ h1, h2, h3, h4 { font-family: var(--font-display); letter-spacing: -0.01em; }
   .showcase-grid { grid-template-columns: 1fr; }
   .metrics-strip { grid-template-columns: repeat(2, 1fr); gap: 16px; padding: 20px; }
   .hero-glass-panel { padding: 30px 22px; max-width: 100%; }
+}
+/* ================= RESPONSIVE UPGRADE ================= */
+:root { --gutter: 32px; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+html, body { overflow-x: clip; }                 /* no sideways scrolling on any device */
+body { min-height: 100vh; min-height: 100dvh; }  /* dvh = real visible height on phones */
+img, video, canvas, svg { max-width: 100%; }
+
+/* Side padding that also respects notches / rounded corners */
+.container {
+  padding-left: max(var(--gutter), env(safe-area-inset-left));
+  padding-right: max(var(--gutter), env(safe-area-inset-right));
+}
+.topnav { padding-top: max(20px, env(safe-area-inset-top)); }
+
+/* Fluid text: scales smoothly instead of jumping at breakpoints */
+.hero-title { font-size: clamp(28px, 5.2vw, 46px); }
+.page-title { font-size: clamp(22px, 4vw, 28px); }
+.stat-card .stat-value { font-size: clamp(24px, 4vw, 32px); }
+.metric-val { font-size: clamp(24px, 5vw, 34px); }
+.entry-title { font-size: clamp(26px, 8vw, 42px); letter-spacing: clamp(0.12em, 1.5vw, 0.32em); }
+
+/* Full-height sections: use dvh so the phone address bar doesn't break them */
+.hero-section { min-height: 78vh; min-height: 78dvh; }
+.hero-parallax-stage { min-height: 85vh; min-height: 85dvh; }
+
+/* ---- Tablets (601-900px): 2 columns instead of 1 ---- */
+@media (min-width: 601px) and (max-width: 900px) {
+  .class-grid { grid-template-columns: repeat(2, 1fr); }
+  .how-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ---- Large screens / desktops / TVs ---- */
+@media (min-width: 1600px) { .container { max-width: 1400px; } }
+@media (min-width: 2200px) { .container { max-width: 1680px; } }
+
+/* ---- Phones and small tablets ---- */
+@media (max-width: 900px) {
+  /* 16px inputs stop iPhones zooming in when you tap a field */
+  input, select, textarea, .input-field { font-size: 16px; }
+  /* Lighter effects = smoother scrolling on phones */
+  body { background-attachment: scroll; }
+  .topnav { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(10,14,26,.96); }
+  .hero-glass-panel { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(8,12,22,.92); }
+  .hero-parallax-bg { background-position: 70% center; }
+}
+
+@media (max-width: 600px) {
+  :root { --gutter: 18px; }
+  .topnav { padding-bottom: 12px; padding-top: max(12px, env(safe-area-inset-top)); }
+  .brand { font-size: 17px; }
+  .nav-links { gap: 14px; }
+  .nav-links a { font-size: 13px; }
+  .page-head { padding: 28px 0 20px; }
+  .form-card { padding: 22px 18px; max-width: 100%; }
+  .section-head { flex-wrap: wrap; gap: 8px; }
+
+  /* Scan page: keep the buttons reachable at the bottom of the screen */
+  .attend-head { padding: 20px 0 16px; }
+  .session-timer { font-size: 18px; }
+  .live-stats-bar { flex-wrap: wrap; gap: 4px; }
+  .attend-actions {
+    position: sticky; bottom: 0; z-index: 20;
+    padding: 10px 0 max(10px, env(safe-area-inset-bottom));
+    background: linear-gradient(180deg, transparent, var(--bg-base) 30%);
+  }
+  .attend-actions .btn { padding: 12px 10px; font-size: 13px; }
+  .roster { max-height: 320px; }
+}
+
+@media (max-width: 520px) {
+  .camera-surface { max-height: 68vh; max-height: 68dvh; }
+  .overall-row { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .overall-row > div:last-child { width: 100%; }
+  .pct-bar-mini { flex: 1; width: auto; min-width: 60px; }
+  .report-list-item { padding: 12px 14px; gap: 10px; }
+}
+
+/* ---- Very small phones (iPhone SE, old Androids, 320-380px) ---- */
+@media (max-width: 380px) {
+  :root { --gutter: 12px; }
+  .stats-row, .metrics-strip { grid-template-columns: 1fr; }
+  .btn { padding: 12px 16px; }
+  .hero-glass-panel { padding: 24px 16px; }
+  .entry-content { padding: 16px; gap: 16px; }
+}
+
+/* ---- Touch screens: bigger tap targets, no double-tap delay ---- */
+@media (pointer: coarse) {
+  .btn, .btn-sm { min-height: 44px; }
+  .nav-links a, .back-link, .scan-btn, .remove-btn {
+    min-height: 44px; display: inline-flex; align-items: center;
+  }
+  button, a, .class-card, .new-class-card { touch-action: manipulation; }
+}
+
+/* ---- Phones held sideways (short screens) ---- */
+@media (max-height: 500px) and (orientation: landscape) {
+  .hero-section, .hero-parallax-stage { min-height: auto; }
+  .topnav { padding-top: 8px; padding-bottom: 8px; }
+  .attend-layout { grid-template-columns: 1.4fr 1fr; }
+  .camera-surface { aspect-ratio: 16/9; max-height: 75vh; max-height: 75dvh; }
+  .attend-actions { position: static; background: none; }
+  .entry-holo-emblem { width: 90px; height: 90px; }
 }
 </style>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -1969,6 +2078,10 @@ document.getElementById('as-photo').addEventListener('change', () => {
 // warming up while the person reads the page instead of after they click sign-in.
 fetch(`${API_BASE}/health`).catch(() => {});
 
+if (/FBAN|FBAV|Instagram|LinkedInApp|Snapchat|WhatsApp|Line\//i.test(navigator.userAgent)) {
+  showLoginError('For Google sign-in and the camera, please open this link in Chrome or Safari.');
+}
+  
 tryRestoreSession();
 initGoogleSignIn();
 </script>
