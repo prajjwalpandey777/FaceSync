@@ -1183,6 +1183,7 @@ h1, h2, h3, h4 { font-family: var(--font-display); letter-spacing: -0.01em; }
     <a class="back-link" onclick="goHome()">&larr; Back to dashboard</a>
     <div class="page-title" id="rp-title">Attendance report</div>
     <div class="page-sub" id="rp-sub">—</div>
+    <button class="btn btn-primary btn-sm" id="rp-export-btn" style="display:none; margin-top:14px;" onclick="downloadExcelReport()">Download Excel</button>
   </div>
 
   <div class="stats-row" id="rp-stats"></div>
@@ -1763,6 +1764,7 @@ async function scanOnce() {
     s.total = result.total_count;
     updateLiveStatsDisplay(s.present, s.total);
   } catch (err) {
+    if (state.session !== s) return;
     console.warn('scan attempt failed:', err.message);
     if (state.session === s) document.getElementById('frame-counter').textContent = 'RECONNECTING…';
     if (DeviceAI.mode === 'device') DeviceAI.noteFailure();
@@ -1838,22 +1840,32 @@ async function endAttendance() {
   if (!confirm('End attendance session? Students not yet scanned will be marked absent.')) return;
   const s = state.session; if (!s) return;
 
-  scanActive = false;
-  scanPaused = false;
-  if (s.clockTimer) clearInterval(s.clockTimer);
-  Camera.stop();
+  const btn = document.querySelector('.attend-actions .btn-danger');
+  btn.disabled = true; btn.textContent = 'Ending…';
+  scanActive = false; scanPaused = false;           // stop the loop first
 
   try {
     await Api.endSession(s.id);
-    const report = await Api.classReport(s.classId, s.id);
-    state.currentClassId = s.classId;
-    state.session = null;
-    renderReportFromServer(report);
-    await loadClassesFromServer();
-    showView('report');
   } catch (err) {
-    alert('Could not close the session cleanly: ' + err.message);
+    alert('Could not end the session: ' + err.message);
+    btn.disabled = false; btn.textContent = 'End attendance';
+    scanActive = true; runScanLoop();               // camera is still running, so resume
+    return;
   }
+
+  if (s.clockTimer) clearInterval(s.clockTimer);
+  Camera.stop();
+  state.currentClassId = s.classId;
+  state.session = null;
+  btn.disabled = false; btn.textContent = 'End attendance';
+
+  showView('report');                               // leave the scan page immediately
+  try {
+    renderReportFromServer(await Api.classReport(s.classId, s.id));
+  } catch (err) {
+    alert('Session ended, but the report could not be loaded: ' + err.message);
+  }
+  loadClassesFromServer().catch(() => {});
 }
 
 /* ============ REPORT ============ */
